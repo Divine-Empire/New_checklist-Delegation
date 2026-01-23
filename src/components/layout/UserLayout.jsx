@@ -70,7 +70,7 @@ const UserLayout = ({ children }) => {
             className="flex items-center gap-2 font-semibold text-blue-700"
           >
           <img
-            src="/divinelogo.png"
+            src="/public/divinelogo.png"
             alt="Divine Empire India Pvt. Ltd."
             className="h-10 object-contain"
           />
