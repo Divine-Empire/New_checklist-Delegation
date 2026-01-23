@@ -64,13 +64,20 @@ const UserLayout = ({ children }) => {
     <div className="flex h-screen overflow-hidden bg-gradient-to-br from-green-50 to-teal-50 dark:from-gray-900 dark:to-teal-950">
       {/* Sidebar for desktop */}
       <aside className="hidden w-64 flex-shrink-0 border-r border-green-200 dark:border-teal-800 bg-white dark:bg-gray-950 md:flex md:flex-col">
-        <div className="flex h-14 items-center border-b border-green-200 dark:border-teal-800 px-4 bg-gradient-to-r from-green-100 to-teal-100 dark:from-green-900 dark:to-teal-900">
+          <div className="flex h-14 items-center justify-between border-b border-blue-200 px-4 bg-gradient-to-r from-blue-100 to-purple-100">
           <Link
-            to={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
-            className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-300"
+            to="/dashboard/admin"
+            className="flex items-center gap-2 font-semibold text-blue-700"
           >
+          <img
+            src="/public/divinelogo.png"
+            alt="Divine Empire India Pvt. Ltd."
+            className="h-10 object-contain"
+          />
+            {/* <ClipboardList className="h-5 w-5 text-blue-600" /> */}
             <span>Checklist & Delegation</span>
           </Link>
+
         </div>
         <nav className="flex-1 overflow-y-auto p-2">
           <ul className="space-y-1">
