@@ -9,6 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   base: "/", // Changed from "./" to "/"
+  publicDir:"public",
   build: {
     outDir: "dist",
   },
