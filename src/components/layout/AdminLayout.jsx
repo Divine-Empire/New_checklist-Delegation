@@ -797,7 +797,7 @@ export default function AdminLayout({ children, darkMode, toggleDarkMode }) {
             className="flex items-center gap-2 font-semibold text-blue-700"
           >
           <img
-            src="/public/divinelogo.png"
+            src="/divinelogo.png"
             alt="Divine Empire India Pvt. Ltd."
             className="h-10 object-contain"
           />
