@@ -69,7 +69,7 @@ const UserLayout = ({ children }) => {
             to={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
             className="flex items-center gap-2 font-semibold text-green-700 dark:text-green-300"
           >
-            <i className="fas fa-clipboard-list h-5 w-5 text-green-600 dark:text-green-400"></i>
+            {/* <i className="fas fa-clipboard-list h-5 w-5 text-green-600 dark:text-green-400"></i> */}
             <span>Checklist & Delegation</span>
           </Link>
         </div>
