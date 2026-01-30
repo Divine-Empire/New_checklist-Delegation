@@ -710,8 +710,8 @@ export default function AssignTask() {
         return;
       }
 
-      // Helper function to check if this is the first task for the user
-      const isFirstTaskForUser = async (doerName) => {
+      // NEW: Helper function to check if this is the first task for the user with unique description
+      const isFirstTaskForUser = async (doerName, taskDescription) => {
         try {
           const sheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
           const sheetName = "Checklist";
@@ -723,81 +723,231 @@ export default function AssignTask() {
           const response = await fetch(url);
           if (!response.ok) {
             console.log("Checklist sheet not found - treating as first task");
-            return true;
+            return { isFirstTask: true, hasSameDescription: false };
           }
 
           const data = await response.json();
 
           if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
             console.log("Checklist sheet is empty - treating as first task");
-            return true;
+            return { isFirstTask: true, hasSameDescription: false };
           }
+
+          let userExists = false;
+          let hasSameDescription = false;
 
           // Check if doer name exists in column E (index 4) - "name" column
           for (let i = 1; i < data.table.rows.length; i++) {
             const row = data.table.rows[i];
             if (row.c && row.c[4] && row.c[4].v) {
               const existingDoer = row.c[4].v.toString().trim();
+
               if (existingDoer === doerName.trim()) {
-                console.log(`User "${doerName}" found in Checklist - NOT first task`);
-                return false;
+                userExists = true;
+
+                // Also check if the task description already exists for this user
+                if (row.c[5] && row.c[5].v) { // Column F (index 5) is Task Description
+                  const existingDescription = row.c[5].v.toString().trim();
+                  if (existingDescription === taskDescription.trim()) {
+                    hasSameDescription = true;
+                    console.log(`User "${doerName}" has same description "${taskDescription}" in Checklist`);
+                  }
+                }
               }
             }
           }
 
-          console.log(`User "${doerName}" NOT found in Checklist - IS first task`);
-          return true;
+          console.log(`User "${doerName}" - Exists: ${userExists}, Same Description: ${hasSameDescription}`);
+          return {
+            isFirstTask: !userExists,
+            hasSameDescription: hasSameDescription
+          };
         } catch (error) {
           console.error("Error checking first task:", error);
-          return true;
+          return { isFirstTask: true, hasSameDescription: false };
         }
       };
 
-      // Determine the sheet(s) based on frequency and first-time user check
+      // NEW: Helper function to check if the combination of Name, Description, and Start Date already exists
+      const doesTaskExist = async (doerName, taskDescription, taskStartDate) => {
+        try {
+          const sheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
+          const sheetName = "Checklist";
+
+          const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
+            sheetName
+          )}&action=fetch&t=${Date.now()}`;
+
+          const response = await fetch(url);
+          if (!response.ok) {
+            console.log("Checklist sheet not found - treating as new task");
+            return false;
+          }
+
+          const data = await response.json();
+
+          if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
+            console.log("Checklist sheet is empty - treating as new task");
+            return false;
+          }
+
+          // Check if the combination of Name, Description, and Start Date exists
+          for (let i = 1; i < data.table.rows.length; i++) {
+            const row = data.table.rows[i];
+
+            if (row.c && row.c[4] && row.c[4].v && row.c[5] && row.c[5].v && row.c[6] && row.c[6].v) {
+              const existingDoer = row.c[4].v.toString().trim();
+              const existingDescription = row.c[5].v.toString().trim();
+              const existingStartDate = row.c[6].v.toString().trim();
+
+              if (existingDoer === doerName.trim() &&
+                  existingDescription === taskDescription.trim() &&
+                  existingStartDate === taskStartDate.trim()) {
+                console.log(`Task with Name: "${doerName}", Description: "${taskDescription}", Start Date: "${taskStartDate}" already exists in Checklist`);
+                return true;
+              }
+            }
+          }
+
+          return false;
+        } catch (error) {
+          console.error("Error checking task existence:", error);
+          return false;
+        }
+      };
+
+      // NEW: Helper function to check if the same Name and Description exist but with different Start Date
+      const doesTaskWithSameNameAndDescExistWithDiffDate = async (doerName, taskDescription, taskStartDate) => {
+        try {
+          const sheetId = "18lgxCfDKsnLIGpV9t1-ZK2lhaewTcl8n82R0hsUxspY";
+          const sheetName = "Checklist";
+
+          const url = `https://script.google.com/macros/s/AKfycbzgnGeXYxQbSpXntQHWFvEFjB0ThRZpvTpL-iWh7itqbsOW-iMgxYsc7whiRnYtolBAVg/exec?sheet=${encodeURIComponent(
+            sheetName
+          )}&action=fetch&t=${Date.now()}`;
+
+          const response = await fetch(url);
+          if (!response.ok) {
+            console.log("Checklist sheet not found - treating as new task");
+            return false;
+          }
+
+          const data = await response.json();
+
+          if (!data.table || !data.table.rows || data.table.rows.length <= 1) {
+            console.log("Checklist sheet is empty - treating as new task");
+            return false;
+          }
+
+          // Check if the combination of Name and Description exists but with a different Start Date
+          for (let i = 1; i < data.table.rows.length; i++) {
+            const row = data.table.rows[i];
+
+            if (row.c && row.c[4] && row.c[4].v && row.c[5] && row.c[5].v && row.c[6] && row.c[6].v) {
+              const existingDoer = row.c[4].v.toString().trim();
+              const existingDescription = row.c[5].v.toString().trim();
+              const existingStartDate = row.c[6].v.toString().trim();
+
+              if (existingDoer === doerName.trim() &&
+                  existingDescription === taskDescription.trim() &&
+                  existingStartDate !== taskStartDate.trim()) {
+                console.log(`Task with Name: "${doerName}", Description: "${taskDescription}", but different Start Date exists in Checklist`);
+                return true;
+              }
+            }
+          }
+
+          return false;
+        } catch (error) {
+          console.error("Error checking task existence with different date:", error);
+          return false;
+        }
+      };
+
+      // Determine the sheet(s) based on frequency and new logic
       let submitToSheets = [];
 
       if (formData.frequency === "one-time") {
         submitToSheets = ["DELEGATION"];
         console.log("One-time task - submitting to DELEGATION only");
       } else {
-        const isFirstTask = await isFirstTaskForUser(formData.doer);
+        // For recurring tasks, first check if it's the user's first task
+        const { isFirstTask, hasSameDescription } = await isFirstTaskForUser(formData.doer, formData.description);
+
         if (isFirstTask) {
+          // First time task for this user - submit to both sheets
           submitToSheets = ["Unique", "Checklist"];
           console.log("First task for user - submitting to both Unique and Checklist");
         } else {
-          submitToSheets = ["Unique"];
-          console.log("Existing user - submitting to Unique only");
+          // Check if Name + Description exists but with different Start Date
+          const taskWithSameNameAndDescExistsWithDiffDate = await doesTaskWithSameNameAndDescExistWithDiffDate(
+            formData.doer,
+            formData.description,
+            generatedTasks[0]?.dueDate || ""
+          );
+
+          if (taskWithSameNameAndDescExistsWithDiffDate) {
+            // Same Name + Description but different Start Date -> submit to both sheets
+            submitToSheets = ["Unique", "Checklist"];
+            console.log("Same Name + Description but different Start Date - submitting to both Unique and Checklist");
+          } else {
+            // For existing users, check if Name + Description + Start Date combination already exists
+            const taskExists = await doesTaskExist(formData.doer, formData.description, generatedTasks[0]?.dueDate || "");
+
+            if (taskExists) {
+              // If the exact combination exists, submit only to Unique sheet
+              submitToSheets = ["Unique"];
+              console.log("Task with same Name, Description, and Start Date exists - submitting to Unique only");
+            } else {
+              // If it's not the first task, and not an existing combination, and not same description with different date,
+              // then it's a new description for existing user - submit to both sheets
+              submitToSheets = ["Unique", "Checklist"];
+              console.log("New description for existing user - submitting to both Unique and Checklist");
+            }
+          }
         }
       }
 
       console.log(`Selected department: ${formData.department}`);
       console.log(`Doer: ${formData.doer}`);
       console.log(`Target sheets: ${submitToSheets.join(', ')}`);
+      console.log(`Generated tasks:`, generatedTasks);
+
+      // Optimization: Get last task ID only once from the Unique sheet to minimize API calls
+      let nextTaskId = 1; // Default starting ID
+
+      if (submitToSheets.some(sheet => sheet !== "DELEGATION")) {
+        const lastTaskId = await getLastTaskId("Unique"); // Get last task ID from Unique sheet
+        nextTaskId = lastTaskId + 1;
+      }
+
+      // Prepare all tasks data for batch insertion using the same task IDs
+      const tasksData = generatedTasks.map((task, index) => {
+        return {
+          timestamp: getCurrentTimestamp(),
+          taskId: (nextTaskId + index).toString(), // Use same task IDs for all sheets
+          department: task.department || formData.department,
+          givenBy: task.givenBy || formData.givenBy,
+          name: task.doer || formData.doer,
+          description: task.description,
+          startDate: task.dueDate,
+          freq: task.frequency,
+          enableReminders: task.enableReminders ? "Yes" : "No",
+          requireAttachment: task.requireAttachment ? "Yes" : "No"
+        };
+      });
 
       // Submit to each target sheet
       for (const sheetName of submitToSheets) {
-        // Get the last task ID from the current sheet (only for sheets that need it)
-        const needsTaskId = sheetName !== "Checklist";
-        const lastTaskId = needsTaskId ? await getLastTaskId(sheetName) : 0;
-        let nextTaskId = lastTaskId + 1;
-
-        // Prepare all tasks data for batch insertion
-        const tasksData = generatedTasks.map((task, index) => {
-          return {
-            timestamp: getCurrentTimestamp(),
-            taskId: needsTaskId ? (nextTaskId + index).toString() : "",
-            department: task.department || formData.department,
-            givenBy: task.givenBy || formData.givenBy,
-            name: task.doer || formData.doer,
-            description: task.description,
-            startDate: task.dueDate,
-            freq: task.frequency,
-            enableReminders: task.enableReminders ? "Yes" : "No",
-            requireAttachment: task.requireAttachment ? "Yes" : "No"
-          };
-        });
-
         console.log(`Submitting ${tasksData.length} tasks to ${sheetName} sheet`);
+        console.log(`Data being sent to ${sheetName}:`, tasksData);
+
+        // Show specific details for each sheet
+        if (sheetName === "Checklist") {
+          console.log(`Checklist sheet - Task IDs being sent:`, tasksData.map(task => task.taskId));
+        } else if (sheetName === "Unique") {
+          console.log(`Unique sheet - Task IDs being used:`, tasksData.map((task, idx) => nextTaskId + idx));
+        }
 
         // Submit all tasks in one batch to Google Sheets
         const formPayload = new FormData();
